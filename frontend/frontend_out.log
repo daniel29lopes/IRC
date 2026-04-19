@@ -1,0 +1,26 @@
+
+> frontend@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
+ ⚠ Port 3002 is in use, trying 3003 instead.
+ ⚠ Port 3003 is in use, trying 3004 instead.
+ ⚠ Port 3004 is in use, trying 3005 instead.
+ ⚠ Port 3005 is in use, trying 3006 instead.
+ ⚠ Port 3006 is in use, trying 3007 instead.
+ ⚠ Port 3007 is in use, trying 3008 instead.
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3008
+
+ ✓ Starting...
+<w> [webpack.cache.PackFileCacheStrategy] Restoring pack from /app/frontend/.next/cache/webpack/client-development.pack.gz failed: TypeError: Cannot read properties of undefined (reading 'hasStartTime')
+ ✓ Ready in 2.3s
+ ○ Compiling /qualidade ...
+ ✓ Compiled /qualidade in 8.4s (882 modules)
+ GET /qualidade 200 in 9387ms
+ ✓ Compiled in 936ms (391 modules)
+ ✓ Compiled in 153ms (377 modules)
+ GET /qualidade 200 in 48ms
+ GET /qualidade 200 in 35ms
+ GET /qualidade 200 in 32ms
