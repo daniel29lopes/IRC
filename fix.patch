@@ -1,0 +1,32 @@
+--- frontend/src/app/dashboard/page.tsx
++++ frontend/src/app/dashboard/page.tsx
+@@ -32,23 +32,28 @@
+
+ export default function DashboardPage() {
+   const [logs, setLogs] = useState(initialAuditLogs);
++  const [isMounted, setIsMounted] = useState(false);
+
+   useEffect(() => {
++    setIsMounted(true);
++
+     let index = 0;
+     const interval = setInterval(() => {
+       if (index < liveFeedSimulations.length) {
+         const newLog = {
+           id: Date.now(),
+-          timestamp: new Date().toISOString(),
++          // Para evitar erros de hidratação e simular bem, usamos a hora atual ao criar o log
++          timestamp: new Date().toISOString(),
+           ...liveFeedSimulations[index]
+         };
+         setLogs(prev => [newLog, ...prev]);
+         index++;
+       } else {
+-        index = 0; // Loop the simulation if needed, or just stop
++        index = 0;
+       }
+-    }, 4000); // 4 seconds interval
++    }, 4000);
+
+     return () => clearInterval(interval);
+   }, []);
