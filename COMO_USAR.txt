@@ -6,6 +6,16 @@ Olá! Se não és programador e precisas de colocar este
 sistema a funcionar, segue estes passos muito simples:
 
 
+(NOVO) USAR O DOCKER PARA A BASE DE DADOS:
+Se tiveres o "Docker Desktop" instalado no teu computador, já não precisas
+de te preocupar com instalar PostgreSQL!
+Abre a linha de comandos na pasta deste projeto e escreve:
+docker-compose up -d
+
+Isto vai arrancar uma base de dados pronta para ser usada. Podes fechar
+a janela e seguir para os passos abaixo!
+
+
 --- SE USAS WINDOWS:
 
 1. Faz duplo-clique no ficheiro "run.bat".
@@ -44,10 +54,7 @@ sistema a funcionar, segue estes passos muito simples:
 =====================================================
                     COMO TESTAR?
 =====================================================
-No endereço (http://127.0.0.1:8000/docs) vais ver várias barras cinzentas (rotas).
-
-Para testares se funciona:
-1. Clica na primeira que diz "GET /health".
-2. Clica no botão "Try it out" (Experimentar) do lado direito.
-3. Clica em "Execute".
-4. Se na caixa preta mais abaixo aparecer "status": "online", parabéns! Está tudo a funcionar perfeitamente e ligado à base de dados.
+Para perceberes melhor o que é esta página e como a podes
+usar para dar comandos à fábrica (simular o sistema),
+abre e lê o ficheiro "MANUAL_DA_PLATAFORMA.txt" que se
+encontra nesta pasta!

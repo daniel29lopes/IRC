@@ -1,0 +1,73 @@
+========================================================================
+                      MANUAL DA PLATAFORMA - TRACK-FAB ERP
+========================================================================
+
+Parabéns por conseguires abrir o http://127.0.0.1:8000/docs!
+Isto significa que o "Coração" do sistema já está a bater.
+
+O QUE É ESTA PÁGINA (/docs)?
+------------------------------------------------------------------------
+O que desenvolvemos até agora foi o "Backend" (o motor lógico e a base
+de dados). Ele não tem botões bonitos nem cores (Frontend) porque atua
+apenas como o servidor que gere as regras rígidas da fábrica.
+
+A página onde estás (chamada de Swagger UI) é o "Painel de Controlo
+para Programadores". É aqui que nós testamos se o motor funciona antes
+de ligarmos a carroçaria (o Frontend/Website visual).
+
+Nesta página, cada barra cinzenta que vês é como se fosse um botão ou
+formulário que no futuro existirá na aplicação final.
+
+
+COMO SIMULAR O FUNCIONAMENTO DA FÁBRICA AQUI:
+------------------------------------------------------------------------
+Neste ecrã, tu podes "Fingir" que és o Website a enviar ordens para
+a fábrica.
+
+PASSO 1: Escolhe uma ação
+- Clica numa das barras (por exemplo: POST /api/v1/logistica/requisicoes).
+
+PASSO 2: Clica em "Try it out"
+- No canto superior direito dessa barra, clica no botão "Try it out"
+  (Experimentar). Isto vai desbloquear a caixa de texto onde se insere
+  a informação.
+
+PASSO 3: Escreve os dados
+- A caixa de texto preta vai ter código no formato "JSON" (é como se
+  fosse um formulário). Podes alterar os números ali escritos.
+  Por exemplo, para criar uma requisição, metes o ID do utilizador e a
+  referência do material.
+
+PASSO 4: Executar a ordem
+- Clica no botão azul grande que diz "Execute".
+
+PASSO 5: Vê o resultado
+- Faz scroll (anda um pouco para baixo) até veres a secção "Server response".
+- Vais ver um bloco verde com o Código "200" ou "201". Isso significa
+  "Sucesso!". Lá dentro vai aparecer a resposta da base de dados (ex:
+  "Requisição criada com sucesso").
+
+
+EXEMPLO PRÁTICO (Testar do Início ao Fim)
+------------------------------------------------------------------------
+O nosso motor não pode falhar nas regras. Tenta fazer isto:
+
+1. Vai a [Produção] -> PUT /api/v1/producao/itens/{id_item}/estado
+2. Clica "Try it out".
+3. Tenta mudar o estado para "SOLDADO", mas coloca um "novo_estado"
+   que não faça sentido na lógica.
+4. Clica Execute. O servidor vai proibir a ação e dar-te um Erro (Vermelho)
+   a dizer "Transição não permitida". É assim que o motor protege a
+   fábrica!
+
+
+O QUE VEM A SEGUIR NAS PRÓXIMAS VERSÕES?
+------------------------------------------------------------------------
+A fase 1 (O Motor Lógico e Base de Dados) está 100% pronta.
+O próximo passo, que poderemos desenvolver futuramente, será o "Frontend".
+Vamos construir os ecrãs com botões, caixas de texto, cores e tabelas
+reais, onde a equipa da fábrica vai clicar. Esses botões visuais vão,
+de forma invisível, usar estas rotas que agora vês neste ecrã (/docs).
+
+Guarda bem esta base, pois é ela que garante que a fábrica nunca perde
+material e que a qualidade da engenharia nunca é violada!
