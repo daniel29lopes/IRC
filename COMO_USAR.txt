@@ -1,0 +1,53 @@
+=====================================================
+          GUIA RÁPIDO DO TRACK-FAB ERP
+=====================================================
+
+Olá! Se não és programador e precisas de colocar este
+sistema a funcionar, segue estes passos muito simples:
+
+
+--- SE USAS WINDOWS:
+
+1. Faz duplo-clique no ficheiro "run.bat".
+   (Se o Windows der um aviso, clica em "Mais informações" e "Executar assim mesmo").
+
+2. O programa vai abrir uma janela preta e verificar tudo sozinho.
+   - Se disser que não tens o Python, vai a python.org, descarrega a versão mais recente e instala-a (não te esqueças de marcar a caixa "Add Python to PATH" durante a instalação).
+   - Se for a primeira vez, ele vai criar um ficheiro chamado ".env" e fechar-se.
+
+3. Abre esse novo ficheiro ".env" no Bloco de Notas.
+   Lá dentro vais ver algo como "postgresql+asyncpg://...". Substitui os dados "postgres:password@localhost" pelos dados da TUA base de dados.
+
+4. Guarda o ficheiro e clica outra vez no "run.bat".
+   Ele vai instalar tudo e arrancar. Não feches a janela preta!
+
+5. Abre o teu navegador (Google Chrome, Edge, etc.) e vai a:
+   http://127.0.0.1:8000/docs
+
+6. Podes testar tudo aí!
+
+
+--- SE USAS MAC OU LINUX:
+
+1. Abre o teu terminal na pasta do projeto.
+
+2. Executa o comando: ./run.sh
+
+3. Tal como no Windows, na primeira vez ele vai criar o ficheiro ".env". Edita esse ficheiro com as tuas credenciais.
+
+4. Volta a correr: ./run.sh
+
+5. Abre o teu navegador (Google Chrome, Safari, etc.) e vai a:
+   http://127.0.0.1:8000/docs
+
+
+=====================================================
+                    COMO TESTAR?
+=====================================================
+No endereço (http://127.0.0.1:8000/docs) vais ver várias barras cinzentas (rotas).
+
+Para testares se funciona:
+1. Clica na primeira que diz "GET /health".
+2. Clica no botão "Try it out" (Experimentar) do lado direito.
+3. Clica em "Execute".
+4. Se na caixa preta mais abaixo aparecer "status": "online", parabéns! Está tudo a funcionar perfeitamente e ligado à base de dados.
