@@ -11,7 +11,7 @@ from app.schemas.logistica import RequisicaoCreate, EntregaCreate
 
 router = APIRouter()
 
-@router.post("/api/logistica/requisicoes/", status_code=201)
+@router.post("/requisicoes/", status_code=201)
 async def criar_requisicao(data: RequisicaoCreate, db: AsyncSession = Depends(get_db)) -> Dict:
     async with db.begin():
         cabecalho = RequisicaoCabecalho(estado=EstadoRequisicao.ABERTA)
@@ -50,7 +50,7 @@ async def criar_requisicao(data: RequisicaoCreate, db: AsyncSession = Depends(ge
     return {"status": "Requisição criada com sucesso", "id_requisicao": cabecalho.id_requisicao}
 
 
-@router.post("/api/logistica/entregas/")
+@router.post("/entregas/")
 async def registar_entrega(data: EntregaCreate, db: AsyncSession = Depends(get_db)) -> Dict:
     async with db.begin():
         # Lock do cabeçalho da requisição

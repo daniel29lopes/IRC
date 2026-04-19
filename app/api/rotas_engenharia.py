@@ -11,7 +11,7 @@ from app.schemas.engenharia import NovaRevisaoCreate, RevalidarHoldRequest
 
 router = APIRouter()
 
-@router.post("/api/engenharia/isometricas/revisoes/", status_code=201)
+@router.post("/isometricas/revisoes/", status_code=201)
 async def submeter_revisao(data: NovaRevisaoCreate, db: AsyncSession = Depends(get_db)) -> Dict:
     async with db.begin():
         nova_rev = IsometricaRevisao(
@@ -38,7 +38,7 @@ async def submeter_revisao(data: NovaRevisaoCreate, db: AsyncSession = Depends(g
     return {"status": "Nova revisão submetida com sucesso", "id_iso_revisao": nova_rev.id_iso_revisao}
 
 
-@router.put("/api/engenharia/producao/itens/{id_item}/revalidar-hold")
+@router.put("/producao/itens/{id_item}/revalidar-hold")
 async def revalidar_hold(id_item: int, data: RevalidarHoldRequest, db: AsyncSession = Depends(get_db)) -> Dict:
     async with db.begin():
         res_item = await db.execute(

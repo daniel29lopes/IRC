@@ -21,7 +21,7 @@ TRANSIÇÕES_PERMITIDAS = {
     EstadoFabricoItem.CONCLUIDO: []
 }
 
-@router.put("/api/producao/itens/{id_item}/estado")
+@router.put("/itens/{id_item}/estado")
 async def atualizar_estado_item(id_item: int, data: AtualizarEstadoItemRequest, db: AsyncSession = Depends(get_db)) -> Dict:
     async with db.begin():
         res_item = await db.execute(
@@ -66,7 +66,7 @@ async def atualizar_estado_item(id_item: int, data: AtualizarEstadoItemRequest, 
     return {"status": "Estado do item atualizado", "novo_estado": item.estado_fabrico.value}
 
 
-@router.post("/api/producao/juntas/{id_junta}/cortar")
+@router.post("/juntas/{id_junta}/cortar")
 async def registar_corte_junta(id_junta: int, data: CorteJuntaRequest, db: AsyncSession = Depends(get_db)) -> Dict:
     """Implementação baseada no Template de Rigor Transacional do Master Prompt."""
     async with db.begin():
