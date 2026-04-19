@@ -15,7 +15,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
     const navItems = [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Engenharia', href: '#', icon: PencilRuler },
         { name: 'Armazém', href: '#', icon: PackageSearch },
         { name: 'Produção', href: '#', icon: Factory },
