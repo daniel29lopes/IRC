@@ -1,5 +1,8 @@
+"use client";
+
 import React, { ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
     PencilRuler,
@@ -14,12 +17,14 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
+    const pathname = usePathname();
+
     const navItems = [
-        { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-        { name: 'Engenharia', href: '#', icon: PencilRuler },
-        { name: 'Armazém', href: '#', icon: PackageSearch },
-        { name: 'Produção', href: '#', icon: Factory },
-        { name: 'Qualidade (NDT)', href: '#', icon: ShieldCheck },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Engenharia', href: '/engenharia', icon: PencilRuler },
+        { name: 'Armazém', href: '/armazem', icon: PackageSearch },
+        { name: 'Produção', href: '/producao', icon: Factory },
+        { name: 'Qualidade (NDT)', href: '/qualidade', icon: ShieldCheck },
     ];
 
     return (
@@ -34,11 +39,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     <ul className="space-y-1 px-2">
                         {navItems.map((item) => {
                             const Icon = item.icon;
+                            // Check if current route starts with href (to cover subroutes)
+                            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+
                             return (
                                 <li key={item.name}>
                                     <Link
                                         href={item.href}
-                                        className="flex items-center gap-3 px-4 py-3 rounded-md hover:bg-slate-800 transition-colors text-slate-300 hover:text-white"
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                                            isActive
+                                                ? 'bg-slate-800 text-white shadow-inner border-l-4 border-status-pendente'
+                                                : 'hover:bg-slate-800 text-slate-300 hover:text-white border-l-4 border-transparent'
+                                        }`}
                                     >
                                         <Icon className="w-5 h-5" />
                                         <span className="font-medium">{item.name}</span>

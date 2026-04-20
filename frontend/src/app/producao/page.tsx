@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Loader2, X } from "lucide-react";
+import { MOCK_SPOOLS_PRODUCAO } from "@/lib/mockData";
 
 // Máquina de estados replicada para o frontend
 const TRANSIÇÕES_PERMITIDAS: Record<EstadoFabricoItem, EstadoFabricoItem[]> = {
@@ -22,17 +23,8 @@ const ESTADOS_DISPONIVEIS: EstadoFabricoItem[] = [
   "PENDENTE", "EM_CORTE", "EM_MONTAGEM", "SOLDADO", "CONCLUIDO", "HOLD_REVISAO"
 ];
 
-// Dados Falsos para demonstração
-const MOCK_SPOOLS: ItemProducao[] = [
-  { id_item: 101, id_iso_revisao: 1, tipo: "SPOOL", tag_item: "SPL-001", estado_fabrico: "PENDENTE", estado_ndt: "AGUARDA_NDT" },
-  { id_item: 102, id_iso_revisao: 1, tipo: "SPOOL", tag_item: "SPL-002", estado_fabrico: "EM_CORTE", estado_ndt: "AGUARDA_NDT" },
-  { id_item: 103, id_iso_revisao: 2, tipo: "SPOOL", tag_item: "SPL-003", estado_fabrico: "EM_MONTAGEM", estado_ndt: "AGUARDA_NDT" },
-  { id_item: 104, id_iso_revisao: 2, tipo: "SPOOL", tag_item: "SPL-004", estado_fabrico: "SOLDADO", estado_ndt: "AGUARDA_NDT" },
-  { id_item: 105, id_iso_revisao: 3, tipo: "SPOOL", tag_item: "SPL-005", estado_fabrico: "HOLD_REVISAO", estado_ndt: "AGUARDA_NDT" },
-];
-
 export default function ProducaoPage() {
-  const [spools, setSpools] = useState<ItemProducao[]>(MOCK_SPOOLS);
+  const [spools, setSpools] = useState<ItemProducao[]>(MOCK_SPOOLS_PRODUCAO);
   const [selectedSpool, setSelectedSpool] = useState<ItemProducao | null>(null);
 
   const getStatusColor = (estado: EstadoFabricoItem | null) => {
@@ -60,7 +52,7 @@ export default function ProducaoPage() {
   };
 
   const mutation = useMutation({
-    mutationFn: async ({ id_item, novo_estado }: { id_item: number; novo_estado: EstadoFabricoItem }) => {
+    mutationFn: async ({ id_item, novo_estado }: { id_item: string; novo_estado: EstadoFabricoItem }) => {
       // Estamos a assumir id_operador = 1 de forma hardcoded (seria extraido de contexto/JWT futuramente)
       const res = await api.put(`/producao/itens/${id_item}/estado`, { novo_estado, id_operador: 1 });
       return res.data;
@@ -72,9 +64,8 @@ export default function ProducaoPage() {
       );
       setSelectedSpool(null);
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || "Erro ao atualizar estado.";
+    onError: (error: import("axios").AxiosError<{detail?: string}>) => {
+      const msg = error.response?.data?.detail || "Erro ao atualizar estado.";
       toast.error(msg);
       // Opcional: tremer o modal alterando alguma classe
       document.getElementById('modal-card')?.classList.add('animate-shake');

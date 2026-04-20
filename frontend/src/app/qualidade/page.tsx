@@ -2,43 +2,22 @@
 
 import MainLayout from "@/components/layout/MainLayout";
 import { useState } from "react";
-import { ItemProducao, JuntaSoldadura } from "@/types";
+import { JuntaSoldadura } from "@/types";
 import toast from "react-hot-toast";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, Scissors, Loader2 } from "lucide-react";
+import { MOCK_DATA_QUALIDADE, ItemComJuntas } from "@/lib/mockData";
 
-// Estender ItemProducao localmente para agrupar as juntas no Mock Data
-interface ItemComJuntas extends ItemProducao {
-  juntas: JuntaSoldadura[];
-}
-
-const MOCK_DATA: ItemComJuntas[] = [
-  {
-    id_item: 104, id_iso_revisao: 2, tipo: "SPOOL", tag_item: "SPL-004", estado_fabrico: "SOLDADO", estado_ndt: "AGUARDA_NDT",
-    juntas: [
-      { id_junta: 1, id_item: 104, tag_junta: "W01", tentativa: 1, estado_junta: "AGUARDA_NDT" },
-      { id_junta: 2, id_item: 104, tag_junta: "W02", tentativa: 2, estado_junta: "AGUARDA_NDT" },
-    ]
-  },
-  {
-    id_item: 106, id_iso_revisao: 3, tipo: "SPOOL", tag_item: "SPL-006", estado_fabrico: "SOLDADO", estado_ndt: "AGUARDA_NDT",
-    juntas: [
-      { id_junta: 3, id_item: 106, tag_junta: "W01", tentativa: 1, estado_junta: "AGUARDA_NDT" },
-      { id_junta: 4, id_item: 106, tag_junta: "W02", tentativa: 1, estado_junta: "AGUARDA_NDT" },
-      { id_junta: 5, id_item: 106, tag_junta: "W03", tentativa: 1, estado_junta: "APROVADA" }, // Já inspecionada
-    ]
-  }
-];
 
 export default function QualidadePage() {
-  const [spools, setSpools] = useState<ItemComJuntas[]>(MOCK_DATA);
-  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
+  const [spools, setSpools] = useState<ItemComJuntas[]>(MOCK_DATA_QUALIDADE);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   // Estado do Modal de Confirmação de Corte
   const [modalJunta, setModalJunta] = useState<JuntaSoldadura | null>(null);
 
-  const toggleRow = (id_item: number) => {
+  const toggleRow = (id_item: string) => {
     setExpandedRows(prev => ({ ...prev, [id_item]: !prev[id_item] }));
   };
 
@@ -79,9 +58,8 @@ export default function QualidadePage() {
       }));
       setModalJunta(null);
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (error: any) => {
-      const msg = error?.response?.data?.detail || "Erro ao efetuar o registo do corte.";
+    onError: (error: import("axios").AxiosError<{detail?: string}>) => {
+      const msg = error.response?.data?.detail || "Erro ao efetuar o registo do corte.";
       toast.error(msg);
     }
   });

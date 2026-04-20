@@ -28,7 +28,7 @@ export interface RequisicaoCabecalho {
 }
 
 export interface ItemProducao {
-    id_item: number;
+    id_item: string;
     id_iso_revisao: number | null;
     tipo: string | null;
     tag_item: string | null;
@@ -38,7 +38,7 @@ export interface ItemProducao {
 
 export interface JuntaSoldadura {
     id_junta: number;
-    id_item: number | null;
+    id_item: string | null;
     tag_junta: string | null;
     tentativa: number | null;
     estado_junta: EstadoJunta | null;
