@@ -1,3 +1,6 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
 import asyncio
 from app.core.database import engine, AsyncSessionLocal
 from app.models.schema import Base, Utilizador, TipoPerfil
