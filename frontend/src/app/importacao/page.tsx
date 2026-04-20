@@ -79,12 +79,13 @@ export default function ImportacaoPage() {
 
         {/* Modal Resumo (Partial Success) */}
         {resultado && (
-          <div className="bg-white rounded-xl shadow-lg border-2 border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setResultado(null)}>
+            <div role="dialog" aria-modal="true" aria-labelledby="modal-resumo-title" onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-2xl rounded-xl shadow-lg border-2 border-slate-200 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
              <div className={`p-4 flex items-center justify-between border-b ${resultado.status === 'success' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
                 <div className="flex items-center gap-3">
                   {resultado.status === 'success' ? <CheckCircle2 className="w-8 h-8 text-emerald-600" /> : <AlertCircle className="w-8 h-8 text-red-600" />}
                   <div>
-                    <h3 className="font-bold text-lg text-slate-800">
+                    <h3 id="modal-resumo-title" className="font-bold text-lg text-slate-800">
                       {resultado.status === 'success' ? "Importação Perfeita" : "Importação Concluída com Alertas"}
                     </h3>
                     <p className="text-sm text-slate-600">
@@ -108,6 +109,7 @@ export default function ImportacaoPage() {
                  </div>
                </div>
              )}
+            </div>
           </div>
         )}
       </div>

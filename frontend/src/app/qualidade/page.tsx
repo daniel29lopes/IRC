@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, Scissors, Loader2 } from "lucide-react";
 import { ItemProducao } from "@/types";
+import { getContrastText, handleKeyDown } from "@/lib/utils";
 
 export interface ItemComJuntas extends ItemProducao {
   juntas: JuntaSoldadura[];
@@ -29,6 +30,21 @@ export default function QualidadePage() {
 
   const toggleRow = (id_item: string) => {
     setExpandedRows(prev => ({ ...prev, [id_item]: !prev[id_item] }));
+  };
+
+  const getStatusColor = (estado: string | null) => {
+    let bgColor = "bg-gray-200";
+    switch (estado) {
+      case "PENDENTE": bgColor = "bg-status-pendente"; break;
+      case "EM_CORTE": bgColor = "bg-status-corte"; break;
+      case "EM_MONTAGEM": bgColor = "bg-status-montagem"; break;
+      case "SOLDADO": bgColor = "bg-status-montagem border-2 border-status-concluido"; break;
+      case "CONCLUIDO": bgColor = "bg-status-concluido"; break;
+      case "HOLD_REVISAO": bgColor = "bg-status-hold"; break;
+      default: bgColor = "bg-gray-200"; break;
+    }
+    const textColor = getContrastText(bgColor);
+    return `${bgColor} ${textColor}`;
   };
 
   // Mutação para CORTAR a Junta
@@ -75,7 +91,11 @@ export default function QualidadePage() {
               {/* Parent Row */}
               <div
                 onClick={() => toggleRow(spool.id_item)}
-                className={`grid grid-cols-12 gap-4 p-4 items-center cursor-pointer hover:bg-slate-50 transition-colors ${expandedRows[spool.id_item] ? 'bg-slate-50' : ''}`}
+                onKeyDown={(e) => handleKeyDown(e, () => toggleRow(spool.id_item))}
+                tabIndex={0}
+                role="button"
+                aria-expanded={!!expandedRows[spool.id_item]}
+                className={`grid grid-cols-12 gap-4 p-4 items-center cursor-pointer hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400 ${expandedRows[spool.id_item] ? 'bg-slate-50' : ''}`}
               >
                 <div className="col-span-1 flex justify-center text-gray-400">
                   {expandedRows[spool.id_item] ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -87,7 +107,7 @@ export default function QualidadePage() {
                   ISO {spool.id_iso_revisao}
                 </div>
                 <div className="col-span-3">
-                  <span className="bg-status-montagem text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusColor(spool.estado_fabrico)}`}>
                     {spool.estado_fabrico}
                   </span>
                 </div>
@@ -179,15 +199,15 @@ export default function QualidadePage() {
 
       {/* MODAL DE SEGURANÇA PARA CORTE */}
       {modalJunta && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col p-8 border-t-8 border-action-cortar">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !mutationCorte.isPending && setModalJunta(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="modal-corte-title" onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col p-8 border-t-8 border-action-cortar">
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-8 h-8 text-action-cortar" />
               </div>
             </div>
 
-            <h2 className="text-2xl font-black text-center text-gray-800 mb-2">Atenção: Corte NDT</h2>
+            <h2 id="modal-corte-title" className="text-2xl font-black text-center text-gray-800 mb-2">Atenção: Corte NDT</h2>
             <p className="text-center text-gray-500 mb-6">
               Estás prestes a chumbar a junta <strong className="text-gray-800">{modalJunta.tag_junta}</strong>.
               Isto irá gerar uma nova tentativa e afetar o Spool. Esta ação não é reversível.

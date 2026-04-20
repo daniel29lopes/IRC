@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Loader2, X, PlusCircle, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getContrastText, handleKeyDown } from "@/lib/utils";
 
 // Máquina de estados replicada para o frontend
 const TRANSIÇÕES_PERMITIDAS: Record<EstadoFabricoItem, EstadoFabricoItem[]> = {
@@ -63,15 +64,18 @@ function ProducaoPageContent() {
 
 
   const getStatusColor = (estado: EstadoFabricoItem | null) => {
+    let bgColor = "bg-gray-200";
     switch (estado) {
-      case "PENDENTE": return "bg-status-pendente text-white";
-      case "EM_CORTE": return "bg-status-corte text-white";
-      case "EM_MONTAGEM": return "bg-status-montagem text-white";
-      case "SOLDADO": return "bg-status-montagem text-white border-4 border-status-concluido"; // Mistura para soldado
-      case "CONCLUIDO": return "bg-status-concluido text-white";
-      case "HOLD_REVISAO": return "bg-status-hold text-white";
-      default: return "bg-gray-200 text-gray-800";
+      case "PENDENTE": bgColor = "bg-status-pendente"; break;
+      case "EM_CORTE": bgColor = "bg-status-corte"; break;
+      case "EM_MONTAGEM": bgColor = "bg-status-montagem"; break;
+      case "SOLDADO": bgColor = "bg-status-montagem border-4 border-status-concluido"; break;
+      case "CONCLUIDO": bgColor = "bg-status-concluido"; break;
+      case "HOLD_REVISAO": bgColor = "bg-status-hold"; break;
+      default: bgColor = "bg-gray-200"; break;
     }
+    const textColor = getContrastText(bgColor);
+    return `${bgColor} ${textColor}`;
   };
 
   const getStatusBgLight = (estado: EstadoFabricoItem | null) => {
@@ -165,7 +169,10 @@ function ProducaoPageContent() {
             <div
               key={spool.id_item}
               onClick={() => setSelectedSpool(spool)}
-              className={`relative aspect-square rounded-xl border-2 p-4 cursor-pointer flex flex-col justify-between shadow-sm transition-transform hover:scale-105 active:scale-95 ${getStatusBgLight(
+              onKeyDown={(e) => handleKeyDown(e, () => setSelectedSpool(spool))}
+              tabIndex={0}
+              role="button"
+              className={`relative aspect-square rounded-xl border-2 p-4 cursor-pointer flex flex-col justify-between shadow-sm transition-transform hover:scale-105 active:scale-95 focus:ring-4 focus:ring-slate-800 outline-none ${getStatusBgLight(
                 spool.estado_fabrico
               )}`}
             >
@@ -201,10 +208,10 @@ function ProducaoPageContent() {
 
       {/* Drawer Criação */}
       {isDrawerOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-end">
-           <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-end" onClick={() => setIsDrawerOpen(false)}>
+           <div role="dialog" aria-modal="true" aria-labelledby="drawer-title" onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
              <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-               <h2 className="text-xl font-bold">Novo Spool (Manual)</h2>
+               <h2 id="drawer-title" className="text-xl font-bold">Novo Spool (Manual)</h2>
                <button onClick={() => setIsDrawerOpen(false)}><X className="w-6 h-6 text-slate-400" /></button>
              </div>
              <form onSubmit={handleCreateSpool} className="p-6 space-y-4 flex-1 overflow-y-auto">
@@ -227,12 +234,12 @@ function ProducaoPageContent() {
 
       {/* MODAL GIGANTE */}
       {selectedSpool && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div id="modal-card" className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !mutation.isPending && setSelectedSpool(null)}>
+          <div id="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()} className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             {/* Cabecalho Modal */}
             <div className={`p-6 flex justify-between items-center ${getStatusColor(selectedSpool.estado_fabrico)}`}>
               <div>
-                <h2 className="text-3xl font-black">{selectedSpool.tag_item}</h2>
+                <h2 id="modal-title" className="text-3xl font-black">{selectedSpool.tag_item}</h2>
                 <p className="opacity-90 font-medium">Estado Atual: {selectedSpool.estado_fabrico?.replace('_', ' ')}</p>
               </div>
               <button
