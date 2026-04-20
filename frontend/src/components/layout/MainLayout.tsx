@@ -27,6 +27,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { name: 'Qualidade (NDT)', href: '/qualidade', icon: ShieldCheck },
     ];
 
+    const handleLogout = () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('token');
+            localStorage.removeItem('perfil');
+            window.location.href = '/login';
+        }
+    };
+
     return (
         <div className="flex h-screen bg-gray-50 text-foreground">
             {/* Sidebar */}
@@ -62,7 +70,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </nav>
 
                 <div className="p-4 border-t border-slate-800">
-                    <button className="flex items-center gap-3 px-4 py-3 w-full rounded-md hover:bg-slate-800 transition-colors text-slate-300 hover:text-white">
+                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 w-full rounded-md hover:bg-slate-800 transition-colors text-slate-300 hover:text-white">
                         <LogOut className="w-5 h-5 text-status-erro" />
                         <span className="font-medium">Terminar Sessão</span>
                     </button>

@@ -4,10 +4,9 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useState } from "react";
 import { ItemProducao, EstadoFabricoItem } from "@/types";
 import toast from "react-hot-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Loader2, X } from "lucide-react";
-import { MOCK_SPOOLS_PRODUCAO } from "@/lib/mockData";
+import { Loader2, X, PlusCircle } from "lucide-react";
 
 // Máquina de estados replicada para o frontend
 const TRANSIÇÕES_PERMITIDAS: Record<EstadoFabricoItem, EstadoFabricoItem[]> = {
@@ -24,8 +23,18 @@ const ESTADOS_DISPONIVEIS: EstadoFabricoItem[] = [
 ];
 
 export default function ProducaoPage() {
-  const [spools, setSpools] = useState<ItemProducao[]>(MOCK_SPOOLS_PRODUCAO);
   const [selectedSpool, setSelectedSpool] = useState<ItemProducao | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [novoSpool, setNovoSpool] = useState({ id_iso_revisao: 1, tipo: 'SPOOL', tag_item: '', estado_fabrico: 'PENDENTE', estado_ndt: 'AGUARDA_NDT' });
+
+  const { data: spools = [] } = useQuery({
+    queryKey: ['itens_producao'],
+    queryFn: async () => {
+      const res = await api.get('/producao/itens');
+      return res.data as ItemProducao[];
+    }
+  });
+
 
   const getStatusColor = (estado: EstadoFabricoItem | null) => {
     switch (estado) {
@@ -57,12 +66,11 @@ export default function ProducaoPage() {
       const res = await api.put(`/producao/itens/${id_item}/estado`, { novo_estado, id_operador: 1 });
       return res.data;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: () => {
       toast.success("Estado atualizado com sucesso!");
-      setSpools((prev) =>
-        prev.map((s) => (s.id_item === variables.id_item ? { ...s, estado_fabrico: variables.novo_estado } : s))
-      );
       setSelectedSpool(null);
+      // O react query ira fazer refetch / invalidate (aqui forçamos update pela pagina)
+      window.location.reload();
     },
     onError: (error: import("axios").AxiosError<{detail?: string}>) => {
       const msg = error.response?.data?.detail || "Erro ao atualizar estado.";
@@ -72,6 +80,24 @@ export default function ProducaoPage() {
       setTimeout(() => document.getElementById('modal-card')?.classList.remove('animate-shake'), 500);
     },
   });
+
+  const mutationCreate = useMutation({
+    mutationFn: async (payload: typeof novoSpool) => {
+      const res = await api.post('/producao/itens', payload);
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Spool submetido manualmente.");
+      setIsDrawerOpen(false);
+      window.location.reload();
+    },
+    onError: (err: import("axios").AxiosError<{detail?: string}>) => toast.error(err.response?.data?.detail || "Erro ao submeter Spool.")
+  });
+
+  const handleCreateSpool = (e: React.FormEvent) => {
+    e.preventDefault();
+    mutationCreate.mutate(novoSpool);
+  };
 
   const handleUpdateStatus = (novo_estado: EstadoFabricoItem) => {
     if (!selectedSpool) return;
@@ -83,6 +109,9 @@ export default function ProducaoPage() {
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Tracker de Spools (Chão de Fábrica)</h1>
+          <button onClick={() => setIsDrawerOpen(true)} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-700 transition">
+            <PlusCircle className="w-5 h-5" /> Adicionar Manual
+          </button>
         </div>
 
         {/* Grid Kanban */}
@@ -108,6 +137,32 @@ export default function ProducaoPage() {
           ))}
         </div>
       </div>
+
+      {/* Drawer Criação */}
+      {isDrawerOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-end">
+           <div className="bg-white w-full max-w-md h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+             <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+               <h2 className="text-xl font-bold">Novo Spool (Manual)</h2>
+               <button onClick={() => setIsDrawerOpen(false)}><X className="w-6 h-6 text-slate-400" /></button>
+             </div>
+             <form onSubmit={handleCreateSpool} className="p-6 space-y-4 flex-1 overflow-y-auto">
+               <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Tag Combinada (ISO-SPOOL)</label>
+                  <input type="text" required value={novoSpool.tag_item} onChange={e => setNovoSpool({...novoSpool, tag_item: e.target.value})} className="w-full p-3 border rounded-lg" placeholder="EX: ISO123-SPL44" />
+               </div>
+               <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">ID Revisão (DB Link)</label>
+                  <input type="number" required value={novoSpool.id_iso_revisao} onChange={e => setNovoSpool({...novoSpool, id_iso_revisao: Number(e.target.value)})} className="w-full p-3 border rounded-lg" />
+               </div>
+
+               <button type="submit" disabled={mutationCreate.isPending} className="w-full mt-8 bg-status-pendente text-white font-bold p-4 rounded-lg flex justify-center">
+                 {mutationCreate.isPending ? <Loader2 className="w-5 h-5 animate-spin"/> : "Guardar Spool"}
+               </button>
+             </form>
+           </div>
+        </div>
+      )}
 
       {/* MODAL GIGANTE */}
       {selectedSpool && (

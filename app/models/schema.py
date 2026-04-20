@@ -21,6 +21,7 @@ class EstadoFabricoItem(str, enum.Enum):
     SOLDADO = 'SOLDADO'
     HOLD_REVISAO = 'HOLD_REVISAO'
     CONCLUIDO = 'CONCLUIDO'
+    ARQUIVADO = 'ARQUIVADO'
 
 class TipoMovimentoStock(str, enum.Enum):
     ENTRADA = 'ENTRADA'
@@ -46,6 +47,7 @@ class Utilizador(Base):
     id_utilizador: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     nome: Mapped[Optional[str]] = mapped_column(String)
     email: Mapped[Optional[str]] = mapped_column(String, unique=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String)
     perfil: Mapped[Optional[TipoPerfil]] = mapped_column(SQLEnum(TipoPerfil, name="tipo_perfil"))
 
 

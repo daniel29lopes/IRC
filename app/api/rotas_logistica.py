@@ -9,10 +9,13 @@ from app.models.schema import (
 )
 from app.schemas.logistica import RequisicaoCreate, EntregaCreate
 
+from app.api.deps import get_current_user
+from app.models.schema import Utilizador
+
 router = APIRouter()
 
 @router.post("/requisicoes/", status_code=201)
-async def criar_requisicao(data: RequisicaoCreate, db: AsyncSession = Depends(get_db)) -> Dict:
+async def criar_requisicao(data: RequisicaoCreate, db: AsyncSession = Depends(get_db), current_user: Utilizador = Depends(get_current_user)) -> Dict:
     async with db.begin():
         cabecalho = RequisicaoCabecalho(estado=EstadoRequisicao.ABERTA)
         db.add(cabecalho)
@@ -51,7 +54,7 @@ async def criar_requisicao(data: RequisicaoCreate, db: AsyncSession = Depends(ge
 
 
 @router.post("/entregas/")
-async def registar_entrega(data: EntregaCreate, db: AsyncSession = Depends(get_db)) -> Dict:
+async def registar_entrega(id_requisicao: int, data: EntregaCreate, db: AsyncSession = Depends(get_db), current_user: Utilizador = Depends(get_current_user)) -> Dict:
     async with db.begin():
         # Lock do cabeçalho da requisição
         res_cab = await db.execute(

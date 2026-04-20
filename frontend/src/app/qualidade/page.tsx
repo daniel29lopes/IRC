@@ -4,14 +4,23 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useState } from "react";
 import { JuntaSoldadura } from "@/types";
 import toast from "react-hot-toast";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, Scissors, Loader2 } from "lucide-react";
-import { MOCK_DATA_QUALIDADE, ItemComJuntas } from "@/lib/mockData";
+import { ItemProducao } from "@/types";
 
+export interface ItemComJuntas extends ItemProducao {
+  juntas: JuntaSoldadura[];
+}
 
 export default function QualidadePage() {
-  const [spools, setSpools] = useState<ItemComJuntas[]>(MOCK_DATA_QUALIDADE);
+  const { data: spools = [] } = useQuery({
+    queryKey: ['itens_com_juntas'],
+    queryFn: async () => {
+      const res = await api.get('/producao/itens/com-juntas');
+      return res.data as ItemComJuntas[];
+    }
+  });
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   // Estado do Modal de Confirmação de Corte
@@ -27,36 +36,10 @@ export default function QualidadePage() {
       const res = await api.post(`/producao/juntas/${id_junta}/cortar`, { id_operador });
       return { data: res.data, id_junta };
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast.success("Junta cortada. Nova junta agendada.");
-      setSpools(prev => prev.map(spool => {
-        // Encontra o spool desta junta
-        const isSpoolDaJunta = spool.juntas.some(j => j.id_junta === result.id_junta);
-        if (!isSpoolDaJunta) return spool;
-
-        // Atualiza a junta cortada
-        const juntasAtualizadas = spool.juntas.map(j => {
-          if (j.id_junta === result.id_junta) {
-            return { ...j, estado_junta: "CORTADA" as const };
-          }
-          return j;
-        });
-
-        // Simula o retorno do backend que gera a nova linha tentativa + 1
-        // Na vida real isto veria de um invalidation ou refetch do React Query
-        const juntaAntiga = spool.juntas.find(j => j.id_junta === result.id_junta)!;
-        juntasAtualizadas.push({
-          id_junta: Date.now(), // Fake ID
-          id_item: juntaAntiga.id_item,
-          tag_junta: juntaAntiga.tag_junta,
-          tentativa: (juntaAntiga.tentativa || 1) + 1,
-          estado_junta: "AGUARDA_NDT"
-        });
-
-        // Atualiza o estado NDT do spool pai para REPARACAO conforme Master Prompt
-        return { ...spool, juntas: juntasAtualizadas, estado_ndt: "REPARACAO" };
-      }));
       setModalJunta(null);
+      window.location.reload();
     },
     onError: (error: import("axios").AxiosError<{detail?: string}>) => {
       const msg = error.response?.data?.detail || "Erro ao efetuar o registo do corte.";

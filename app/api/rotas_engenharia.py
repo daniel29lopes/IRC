@@ -9,10 +9,31 @@ from app.models.schema import (
 )
 from app.schemas.engenharia import NovaRevisaoCreate, RevalidarHoldRequest
 
+from app.api.deps import get_current_user
+from app.models.schema import Utilizador
+
 router = APIRouter()
 
+@router.get("/holds", response_model=list[dict])
+async def listar_spools_hold(db: AsyncSession = Depends(get_db), current_user: Utilizador = Depends(get_current_user)):
+    stmt = select(ItemProducao).where(ItemProducao.estado_fabrico == EstadoFabricoItem.HOLD_REVISAO)
+    res = await db.execute(stmt)
+    itens = res.scalars().all()
+
+    return [
+        {
+            "id_item": str(i.id_item),
+            "id_iso_revisao": i.id_iso_revisao,
+            "tipo": i.tipo,
+            "tag_item": i.tag_item,
+            "estado_fabrico": i.estado_fabrico,
+            "estado_ndt": i.estado_ndt
+        }
+        for i in itens
+    ]
+
 @router.post("/isometricas/revisoes/", status_code=201)
-async def submeter_revisao(data: NovaRevisaoCreate, db: AsyncSession = Depends(get_db)) -> Dict:
+async def submeter_revisao(data: NovaRevisaoCreate, db: AsyncSession = Depends(get_db), current_user: Utilizador = Depends(get_current_user)) -> Dict:
     async with db.begin():
         nova_rev = IsometricaRevisao(
             id_iso=data.id_iso,
@@ -39,7 +60,7 @@ async def submeter_revisao(data: NovaRevisaoCreate, db: AsyncSession = Depends(g
 
 
 @router.put("/producao/itens/{id_item}/revalidar-hold")
-async def revalidar_hold(id_item: int, data: RevalidarHoldRequest, db: AsyncSession = Depends(get_db)) -> Dict:
+async def revalidar_hold(id_item: int, data: RevalidarHoldRequest, db: AsyncSession = Depends(get_db), current_user: Utilizador = Depends(get_current_user)) -> Dict:
     async with db.begin():
         res_item = await db.execute(
             select(ItemProducao)
