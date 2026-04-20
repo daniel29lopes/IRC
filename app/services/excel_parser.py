@@ -48,8 +48,8 @@ async def processar_importacao_excel(file_bytes: bytes, db: AsyncSession) -> dic
             qtd = row.get("QTD", 0)
             conexao = row.get("CONEXAO", "")
 
-            if not iso_str or not spool_str:
-                erros.append({"linha": idx + 2, "erro": "ISO e SPOOL são obrigatórios"})
+            if not iso_str:
+                erros.append({"linha": idx + 2, "erro": "A coluna ISO é estritamente obrigatória"})
                 continue
 
             # Chaves Compostas: Spool (ISO+SPOOL), Desenho (ISO+REV), Material (ISO+SAP), Soldadura (ISO+CONEXÃO)
@@ -74,27 +74,29 @@ async def processar_importacao_excel(file_bytes: bytes, db: AsyncSession) -> dic
                 db.add(iso_rev)
                 await db.flush()
 
-            # --- Matriz de Reconciliação Spools (INSERT, UPDATE, ARCHIVE na via de leitura) ---
-            tag_item_composto = f"{iso_str}-{spool_str}"
-            stmt_spool = select(ItemProducao).where(ItemProducao.tag_item == tag_item_composto)
-            res_spool = await db.execute(stmt_spool)
-            spool = res_spool.scalars().first()
+            spool = None
+            if spool_str:
+                # --- Matriz de Reconciliação Spools (INSERT, UPDATE, ARCHIVE na via de leitura) ---
+                tag_item_composto = f"{iso_str}-{spool_str}"
+                stmt_spool = select(ItemProducao).where(ItemProducao.tag_item == tag_item_composto)
+                res_spool = await db.execute(stmt_spool)
+                spool = res_spool.scalars().first()
 
-            if spool:
-                # UPDATE se difere na revisao
-                if spool.id_iso_revisao != iso_rev.id_iso_revisao:
-                    spool.id_iso_revisao = iso_rev.id_iso_revisao
-            else:
-                # INSERT (se novo no Excel) -> Requisito: PENDENTE e AGUARDA_NDT
-                spool = ItemProducao(
-                    id_iso_revisao=iso_rev.id_iso_revisao,
-                    tipo="SPOOL",
-                    tag_item=tag_item_composto,
-                    estado_fabrico=EstadoFabricoItem.PENDENTE,
-                    estado_ndt="AGUARDA_NDT"
-                )
-                db.add(spool)
-                await db.flush()
+                if spool:
+                    # UPDATE se difere na revisao
+                    if spool.id_iso_revisao != iso_rev.id_iso_revisao:
+                        spool.id_iso_revisao = iso_rev.id_iso_revisao
+                else:
+                    # INSERT (se novo no Excel) -> Requisito: PENDENTE e AGUARDA_NDT
+                    spool = ItemProducao(
+                        id_iso_revisao=iso_rev.id_iso_revisao,
+                        tipo="SPOOL",
+                        tag_item=tag_item_composto,
+                        estado_fabrico=EstadoFabricoItem.PENDENTE,
+                        estado_ndt="AGUARDA_NDT"
+                    )
+                    db.add(spool)
+                    await db.flush()
 
             # --- Tratamento de Materiais ---
             if sap_str:
@@ -107,24 +109,42 @@ async def processar_importacao_excel(file_bytes: bytes, db: AsyncSession) -> dic
                     db.add(material)
                     await db.flush()
 
-                # Bom Item
-                stmt_bom = select(BomItem).where(
-                    BomItem.id_item == spool.id_item,
-                    BomItem.ref_material == tag_material
-                )
-                res_bom = await db.execute(stmt_bom)
-                bom = res_bom.scalars().first()
-
                 try:
                     qtd_float = float(qtd) if qtd else 1.0
                 except ValueError:
                     qtd_float = 1.0
 
-                if bom:
-                    if bom.qtd_necessaria != qtd_float:
-                        bom.qtd_necessaria = qtd_float
+                # Bom Item
+                if spool:
+                    stmt_bom = select(BomItem).where(
+                        BomItem.id_item == spool.id_item,
+                        BomItem.ref_material == tag_material
+                    )
+                    res_bom = await db.execute(stmt_bom)
+                    bom = res_bom.scalars().first()
+
+                    if bom:
+                        if bom.qtd_necessaria != qtd_float:
+                            bom.qtd_necessaria = qtd_float
+                    else:
+                        db.add(BomItem(id_item=spool.id_item, ref_material=tag_material, qtd_necessaria=qtd_float))
                 else:
-                    db.add(BomItem(id_item=spool.id_item, ref_material=tag_material, qtd_necessaria=qtd_float))
+                    # Se é Field Weld/Material solto sem Spool, podemos alocar ao id_iso_revisao de alguma forma.
+                    # Na nossa DB, BomItem depende de id_item, logo temos que criar um ItemProducao fantasma do tipo "MAT_LINHA" para essa ISO.
+                    # Mas a diretiva diz "sem criar Spools fantasma", portanto, não criamos BomItem ligado a Spool mas poderíamos ter outra tabela.
+                    # Como na BD atual BomItem exige id_item ou ref_material, podemos registá-lo sem `id_item` (que é nullable Optional[int]).
+                    stmt_bom = select(BomItem).where(
+                        BomItem.id_item == None,
+                        BomItem.ref_material == tag_material
+                    )
+                    res_bom = await db.execute(stmt_bom)
+                    bom = res_bom.scalars().first()
+
+                    if bom:
+                        if bom.qtd_necessaria != qtd_float:
+                            bom.qtd_necessaria = qtd_float
+                    else:
+                        db.add(BomItem(id_item=None, ref_material=tag_material, qtd_necessaria=qtd_float))
 
             # --- Tratamento de Soldaduras ---
             if conexao:
@@ -134,9 +154,10 @@ async def processar_importacao_excel(file_bytes: bytes, db: AsyncSession) -> dic
                 junta = res_junta.scalars().first()
 
                 if not junta:
-                    # INSERT -> Requisito: AGUARDA_NDT e tentativa = 1
+                    # INSERT -> Requisito: AGUARDA_NDT e tentativa = 1.
+                    # Se não houver spool (ex: Field Weld), id_item é None
                     nova_junta = JuntaSoldadura(
-                        id_item=spool.id_item,
+                        id_item=spool.id_item if spool else None,
                         tag_junta=tag_junta_composta,
                         tentativa=1,
                         estado_junta=EstadoJunta.AGUARDA_NDT

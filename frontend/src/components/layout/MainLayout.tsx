@@ -9,7 +9,8 @@ import {
     PackageSearch,
     Factory,
     ShieldCheck,
-    LogOut
+    LogOut,
+    UploadCloud
 } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -21,6 +22,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Importar (Bulk)', href: '/importacao', icon: UploadCloud },
         { name: 'Engenharia', href: '/engenharia', icon: PencilRuler },
         { name: 'Armazém', href: '/armazem', icon: PackageSearch },
         { name: 'Produção', href: '/producao', icon: Factory },

@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import MainLayout from "@/components/layout/MainLayout";
 import { useState } from "react";
 import { ItemProducao, EstadoFabricoItem } from "@/types";
 import toast from "react-hot-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Loader2, X, PlusCircle } from "lucide-react";
+import { Loader2, X, PlusCircle, Search } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Máquina de estados replicada para o frontend
 const TRANSIÇÕES_PERMITIDAS: Record<EstadoFabricoItem, EstadoFabricoItem[]> = {
@@ -22,17 +24,41 @@ const ESTADOS_DISPONIVEIS: EstadoFabricoItem[] = [
   "PENDENTE", "EM_CORTE", "EM_MONTAGEM", "SOLDADO", "CONCLUIDO", "HOLD_REVISAO"
 ];
 
-export default function ProducaoPage() {
+import { Suspense } from "react";
+
+function ProducaoPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [selectedSpool, setSelectedSpool] = useState<ItemProducao | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [novoSpool, setNovoSpool] = useState({ id_iso_revisao: 1, tipo: 'SPOOL', tag_item: '', estado_fabrico: 'PENDENTE', estado_ndt: 'AGUARDA_NDT' });
 
+  const filtroISO = searchParams.get('iso') || '';
+  const filtroEstado = searchParams.get('estado') || '';
+
+  const updateFilters = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    router.push(`?${params.toString()}`);
+  };
+
   const { data: spools = [] } = useQuery({
     queryKey: ['itens_producao'],
     queryFn: async () => {
-      const res = await api.get('/producao/itens');
-      return res.data as ItemProducao[];
+      const res = await api.get('/producao/itens/com-juntas');
+      return res.data as any[]; // Usamos endpoint com juntas para ler o estado NDT
     }
+  });
+
+  const spoolsFiltrados = spools.filter((s: any) => {
+    const matchISO = s.tag_item?.toLowerCase().includes(filtroISO.toLowerCase());
+    const matchEstado = filtroEstado ? s.estado_fabrico === filtroEstado : true;
+    return matchISO && matchEstado;
   });
 
 
@@ -69,8 +95,7 @@ export default function ProducaoPage() {
     onSuccess: () => {
       toast.success("Estado atualizado com sucesso!");
       setSelectedSpool(null);
-      // O react query ira fazer refetch / invalidate (aqui forçamos update pela pagina)
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ['itens_producao'] });
     },
     onError: (error: import("axios").AxiosError<{detail?: string}>) => {
       const msg = error.response?.data?.detail || "Erro ao atualizar estado.";
@@ -89,7 +114,7 @@ export default function ProducaoPage() {
     onSuccess: () => {
       toast.success("Spool submetido manualmente.");
       setIsDrawerOpen(false);
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ['itens_producao'] });
     },
     onError: (err: import("axios").AxiosError<{detail?: string}>) => toast.error(err.response?.data?.detail || "Erro ao submeter Spool.")
   });
@@ -109,25 +134,58 @@ export default function ProducaoPage() {
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Tracker de Spools (Chão de Fábrica)</h1>
-          <button onClick={() => setIsDrawerOpen(true)} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-700 transition">
-            <PlusCircle className="w-5 h-5" /> Adicionar Manual
-          </button>
+          <div className="flex gap-4">
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Pesquisar Spool/ISO..."
+                value={filtroISO}
+                onChange={e => updateFilters('iso', e.target.value)}
+                className="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-800 outline-none"
+              />
+            </div>
+            <select
+              value={filtroEstado}
+              onChange={e => updateFilters('estado', e.target.value)}
+              className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-slate-800 outline-none bg-white text-slate-600 font-medium"
+            >
+              <option value="">Todos os Estados</option>
+              {ESTADOS_DISPONIVEIS.map(e => <option key={e} value={e}>{e.replace('_', ' ')}</option>)}
+            </select>
+            <button onClick={() => setIsDrawerOpen(true)} className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow hover:bg-slate-700 transition">
+              <PlusCircle className="w-5 h-5" /> Adicionar Manual
+            </button>
+          </div>
         </div>
 
         {/* Grid Kanban */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {spools.map((spool) => (
+          {spoolsFiltrados.map((spool: any) => (
             <div
               key={spool.id_item}
               onClick={() => setSelectedSpool(spool)}
-              className={`aspect-square rounded-xl border-2 p-4 cursor-pointer flex flex-col justify-between shadow-sm transition-transform hover:scale-105 active:scale-95 ${getStatusBgLight(
+              className={`relative aspect-square rounded-xl border-2 p-4 cursor-pointer flex flex-col justify-between shadow-sm transition-transform hover:scale-105 active:scale-95 ${getStatusBgLight(
                 spool.estado_fabrico
               )}`}
             >
               <div className="flex justify-between items-start">
-                <span className="font-bold text-gray-800 text-lg">{spool.tag_item}</span>
-                <span className="text-xs font-semibold text-gray-500">ISO {spool.id_iso_revisao}</span>
+                <span className="font-bold text-gray-800 text-lg truncate pr-2">{spool.tag_item}</span>
+                <span className="text-xs font-semibold text-gray-500 shrink-0">ISO {spool.id_iso_revisao}</span>
               </div>
+
+              {/* Alerta Visível NDT Retrabalho (Furo 3 UX Resolution) */}
+              {spool.estado_ndt === 'REPARACAO' && (
+                <div className="mt-2 bg-red-100 border border-red-200 text-red-700 text-xs font-bold px-2 py-1 rounded flex flex-col gap-1 shadow-sm">
+                  <div className="flex items-center gap-1">
+                    <span className="animate-pulse">🔴</span> REPARAR JUNTAS:
+                  </div>
+                  {spool.juntas?.filter((j: any) => j.estado_junta === 'CORTADA' || j.tentativa > 1).map((j: any) => (
+                    <span key={j.id_junta} className="ml-4 font-mono">{j.tag_junta} (T{j.tentativa})</span>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-auto">
                 <div className={`px-3 py-2 rounded-lg text-center font-bold text-sm shadow-sm ${getStatusColor(spool.estado_fabrico)}`}>
                   {spool.estado_fabrico?.replace('_', ' ')}
@@ -135,6 +193,9 @@ export default function ProducaoPage() {
               </div>
             </div>
           ))}
+          {spoolsFiltrados.length === 0 && (
+             <div className="col-span-full py-12 text-center text-slate-500 font-medium">Nenhum spool encontrado com estes filtros.</div>
+          )}
         </div>
       </div>
 
@@ -230,5 +291,13 @@ export default function ProducaoPage() {
         </div>
       )}
     </MainLayout>
+  );
+}
+
+export default function ProducaoPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center animate-pulse text-slate-500">Carregando painel de Produção...</div>}>
+      <ProducaoPageContent />
+    </Suspense>
   );
 }

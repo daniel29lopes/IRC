@@ -4,7 +4,7 @@ import MainLayout from "@/components/layout/MainLayout";
 import { useState } from "react";
 import { JuntaSoldadura } from "@/types";
 import toast from "react-hot-toast";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { ChevronDown, ChevronRight, AlertTriangle, CheckCircle, Scissors, Loader2 } from "lucide-react";
 import { ItemProducao } from "@/types";
@@ -14,6 +14,7 @@ export interface ItemComJuntas extends ItemProducao {
 }
 
 export default function QualidadePage() {
+  const queryClient = useQueryClient();
   const { data: spools = [] } = useQuery({
     queryKey: ['itens_com_juntas'],
     queryFn: async () => {
@@ -39,7 +40,7 @@ export default function QualidadePage() {
     onSuccess: () => {
       toast.success("Junta cortada. Nova junta agendada.");
       setModalJunta(null);
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ['itens_com_juntas'] });
     },
     onError: (error: import("axios").AxiosError<{detail?: string}>) => {
       const msg = error.response?.data?.detail || "Erro ao efetuar o registo do corte.";
